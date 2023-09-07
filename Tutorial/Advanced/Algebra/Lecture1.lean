@@ -146,8 +146,7 @@ theorem mul_one (a : G) : a * 1 = a := by
 -- `a⁻¹`が`a`の右逆元でもあること
 @[simp]
 theorem mul_inv_self (a : G) : a * a⁻¹ = 1 := by
-  apply mul_left_cancel a⁻¹
-  simp
+  exact mul_left_cancel a⁻¹ (by simp)
 
 -- いろいろ便利なので練習も兼ねて`simp`を追加。
 @[simp]
@@ -165,7 +164,8 @@ theorem inv_mul_cancel_right (a b : G) : a * b⁻¹ * b = a := by
 /-- 等しいかどうかは右から元をかけてチェックできる。 -/
 theorem mul_right_cancel (a : G) {x y : G} : x * a = y * a → x = y := by
   intro h
-  rw [← mul_inv_cancel_right x a, ← mul_inv_cancel_right y a, h]
+  have : x * a * a⁻¹ = y * a * a⁻¹ := by rw [h]
+  simpa
 
 /-- 左逆元の一意性 -/
 theorem inv_eq_of_mul_eq_one_left {a x : G} : x * a = 1 → a⁻¹ = x := by
@@ -212,9 +212,8 @@ theorem inv_mul_eq_one {a b : G} : a⁻¹ * b = 1 ↔ a = b := by
     _ ↔ a = b := by
       constructor
       · intro h
-        have : a⁻¹⁻¹ = b⁻¹⁻¹ := congrArg _ h
-        simp at this
-        exact this
+        have : a⁻¹⁻¹ = b⁻¹⁻¹ := by rw [h]
+        simpa
       · simp_all
 
 end Section1
@@ -280,7 +279,7 @@ theorem inv_mem_iff {a : G} : a⁻¹ ∈ H ↔ a ∈ H := by
   constructor
   · intro h
     have := inv_mem h
-    simp_all
+    simpa
   · exact inv_mem
 
 /-
