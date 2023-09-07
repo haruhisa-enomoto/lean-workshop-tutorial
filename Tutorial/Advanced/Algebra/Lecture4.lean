@@ -32,13 +32,17 @@ def leftRel {G} [Group G] (H : Subgroup G) : Setoid G where
   r a b := a⁻¹ * b ∈ H
   iseqv := { -- `r`が同値関係なことを示す。
     refl := by -- 反射律
-      sorry
+      simp
     symm := by -- 対称律
       -- ヒント: `H.inv_mem_iff`が使えるかも。
-      sorry
+      intros
+      rw [← H.inv_mem_iff]
+      simpa
     trans := by -- 推移律
       -- ヒント: `H.mul_mem`が使えるかも。
-      sorry
+      intro _ _ _ h₁ h₂
+      have := H.mul_mem h₁ h₂
+      simpa [mul_assoc]
   }
 
 /-- 群`G`とその部分群`H`について、左剰余類のなす集合、
@@ -105,20 +109,23 @@ instance : GroupAction G (G ⧸ H) where
   それが`G ⧸ H`上でwell-definedなことの証明を与える。
   -/
   smul := fun a ↦ lift (fun x ↦ (a * x) ⋆ H) <| by
-    sorry
+    intros
+    simpa [mul_assoc]
   one_smul' := by
     /- これは「任意の`G ⧸ H`の元について◯◯」という形をしている。
     普通に`intro`すると`G ⧸ H`の元を取ることになり面倒だが、
     `rintro ⟨a⟩`とすると、`G`の元`a : G`についての主張に書き換わる。
     -/
-    sorry
+    rintro ⟨a⟩
+    simp
   mul_smul' := by
     /- ヒント: 上のように`rintro`を適切に使うとよい。
     また、ゴールが定義上`? ⋆ H = ? ⋆ H`という形と同じときは、
     `change _ ⋆ H = _ ⋆ H`とすればゴールが変わる。
     （他にもいろんなやり方があるだろう。）
     -/
-    sorry
+    rintro a b ⟨c⟩
+    simp [mul_assoc]
 
 -- `G ⧸ H`上での`G`作用の定義の確認
 @[simp]
@@ -157,7 +164,9 @@ instance {H : Subgroup G} : IsTransitive G (G ⧸ H) where
   exists_smul_eq := by
     -- 任意の`G ⧸ H`の元2つについて◯◯、という主張なので、
     -- `rintro ⟨a⟩ ⟨b⟩`により2つ`G`の元をとってこれる。
-    sorry
+    rintro ⟨a⟩ ⟨b⟩
+    exists b * a⁻¹
+    simp
 
 -- 逆に全ての空でない推移的`G`集合はこの形なことを見ていこう。
 
@@ -169,11 +178,15 @@ def stabilizer (G) [Group G] {X} [GroupAction G X] (x : X) : Subgroup G where
   carrier := { a : G | a • x = x }
   -- 部分群の公理を満たすことを示そう。
   one_mem' := by
-    sorry
+    simp
   mul_mem' := by
-    sorry
+    intros
+    simp_all [mul_smul]
   inv_mem' := by
-    sorry
+    intro a ha
+    calc
+      a⁻¹ • x = a⁻¹ • a • x := by rw [ha]
+      _ = x := by simp
 
 -- 以下`X`を`G`集合とする。
 variable [GroupAction G X]
@@ -190,20 +203,31 @@ def leftQuotientStabilizerIsoSelfOfIsTransitive
   -- `G → X, a ↦ a • x₀`を`G ⧸ stabilizer G x₀`上の写像にリフトさせよう。
   toFun := LeftQuotient.lift (fun a ↦ a • x₀) <| by
     -- 写像がwell-definedなことを示す必要がある。
-    sorry
+    intro a b h
+    simp [mul_smul] at h
+    calc
+      a • x₀ = a • a⁻¹ • b • x₀ := by rw [h]
+      _ = b • x₀ := by simp
   map_smul' := by -- 上の写像が`G`同変なこと。
     -- 「`G ⧸ H`の元について◯◯」がゴールなら、
     -- `rintro ⟨a⟩`とすれば`a : G`についての主張に書き換わる。
-    sorry
+    rintro a ⟨b⟩
+    simp [mul_smul]
   injective := by -- 単射性
-    sorry
+    rintro ⟨a⟩ ⟨b⟩ h
+    simp at *
+    simp [mul_smul, ← h]
   surjective := by -- 全射性
     -- 証明は普通にやってもちょっと複雑なので、一度紙等に通常の証明を書いて考えてみるとよいかもしれない。
 
     -- 今`X`は推移的という仮定があるので、`x y : X`に対して、
     -- `∃ a : G, a • x = y`という形の主張は、
     -- `apply IsTransitive.exists_smul_eq`で示すことができる。
-    sorry
+    intro x
+    have : ∃ a : G, a • x₀ = x := by
+      apply IsTransitive.exists_smul_eq
+    obtain ⟨a, ha⟩ := this
+    exists a ⋆ stabilizer G x₀
 
 end GroupAction
 
