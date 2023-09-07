@@ -224,10 +224,9 @@ def leftQuotientStabilizerIsoSelfOfIsTransitive
     -- `∃ a : G, a • x = y`という形の主張は、
     -- `apply IsTransitive.exists_smul_eq`で示すことができる。
     intro x
-    have : ∃ a : G, a • x₀ = x := by
+    have ⟨a, _⟩ : ∃ a : G, a • x₀ = x := by
       apply IsTransitive.exists_smul_eq
-    obtain ⟨a, _⟩ := this
-    exists a ⋆ stabilizer G x₀
+    exists LeftQuotient.mk a
 
 end GroupAction
 
