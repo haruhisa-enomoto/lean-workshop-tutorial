@@ -51,17 +51,18 @@ theorem smul_smul (a b : G) (x : X) : a • b • x = (a * b) • x := (mul_smul
 -- いくつかの`simp`を追加
 @[simp]
 theorem inv_smul_smul {a : G} {x : X} : a⁻¹ • a • x = x := by
-  sorry
+  simp [smul_smul]
 
 @[simp]
 theorem smul_inv_smul {a : G} {x : X} : a • a⁻¹ • x = x := by
-  sorry
+  simp [smul_smul]
 
 /-- `G`集合に対して左から`a : G`を当てる写像は単射。 -/
 theorem GroupAction.injective (a : G) : Function.Injective fun (x : X) ↦ a • x := by
   intro x y (h : a • x = a • y)
   -- `calc`を使うとよいかも？
-  sorry
+  have : a⁻¹ • a • x = a⁻¹ • a • y := by rw [h]
+  simpa
 
 -- 上の言い換え、きっといつか使うときに便利。
 /-- `G`集合に対して、`a : G`を当てて等しいならもともと等しい。 -/
@@ -70,28 +71,30 @@ theorem smul_cancel (a : G) {x y : X} (h : a • x = a • y) : x = y :=
 
 /-- 左から`a : G`を当てる写像は全射。 -/
 theorem GroupAction.surjective (a : G) : Function.Surjective fun (x : X) ↦ a • x := by
-  sorry
+  intro x
+  exists a⁻¹ • x
+  simp
 
 -- もっと強く、`a • (-)`という写像は自然な逆写像を持つ`X`から`X`への全単射である。
 -- `X`から`X`への全単射とその逆写像の組の集合は`X ≃ X`と表す。
 def GroupAction.toPerm : G → (X ≃ X) := fun (a : G) ↦ {
   toFun := fun x ↦ a • x
   -- この写像の逆写像は何であろうか？
-  invFun := sorry
+  invFun := fun x ↦ a⁻¹ • x
   -- これらが互いに逆写像なことを示す必要がある。
   left_inv := by
-    sorry
+    simp [Function.LeftInverse]
   right_inv := by
-    sorry
+    simp [Function.RightInverse, Function.LeftInverse]
 }
 
 -- 群`G`自体も左から元を当てることで、自然に左`G`集合になる。
 instance : GroupAction G G where
   smul := fun a x ↦ a * x
   one_smul' := by
-    sorry
+    simp
   mul_smul' := by
-    sorry
+    simp [mul_assoc]
 
 /-- `G`集合`G`での`•`の定義の確認。 -/
 @[simp]
@@ -143,7 +146,8 @@ theorem map_smul (f : X →[G] Y) : ∀ (a : G) (x : X), f (a • x) = a • f x
 def GroupActionHom.comp (f₁ : X →[G] Y) (f₂ : Y →[G] Z) : X →[G] Z where
   toFun := f₂ ∘ f₁
   map_smul' := by
-    sorry
+    intros
+    simp [map_smul]
 
 -- ついでに`G`集合の同型も定義しよう。
 
@@ -168,7 +172,9 @@ def GroupActionHom.inverse (f : X →[G] Y)
     もしくは、`rw [Function.LeftInverse] at h₁`で定義を確認して、
     それを利用して直接`calc`で等式を示すこともできる。
     -/
-    sorry
+    intros
+    apply h₁.injective
+    rw [h₂, map_smul, h₂]
 
 /-
 最後に、`G`集合`X`について、`G`自身から`X`への同変写像の集合は、
@@ -184,7 +190,8 @@ def yoneda : (G →[G] X) ≃ X where
   invFun := fun x ↦ {
     toFun := fun a ↦ a • x
     map_smul' := by -- `G`同変なことを示す必要がある。
-      sorry
+      intros
+      simp [mul_smul]
   }
   -- これらが互いに逆写像なこと。
   left_inv := by
@@ -194,9 +201,12 @@ def yoneda : (G →[G] X) ≃ X where
     またゴールが定義上「`c = d`」に等しいときは、
     `change c = d`でゴールをその形に変えられる。
     -/
-    sorry
+    intro
+    ext
+    simp [← map_smul]
   right_inv := by
-    sorry
+    intro
+    simp
 
 end Section2
 
@@ -217,11 +227,18 @@ def orbitRel (G) [Group G] (X) [GroupAction G X] : Setoid X where
   r x y := ∃ a : G, a • x = y
   iseqv := { -- この`r`が同値関係なこと。
     refl := by -- 反射律
-      sorry
+      intro x
+      exists 1
+      simp
     symm := by -- 対称律
-      sorry
+      rintro _ _ ⟨a, _⟩
+      exists a⁻¹
+      aesop
     trans := by -- 推移律
-      sorry
+      rintro _ _ _ ⟨a, _⟩ ⟨b, _⟩
+      exists b * a
+      rw [mul_smul]
+      aesop
   }
 
 -- 一方で`x : X`の軌道というものも考えられる。
@@ -232,7 +249,24 @@ variable [Group G] [GroupAction G X]
 
 /-- 軌道が等しいことと、片方が軌道に含まれることは同値。 -/
 theorem orbit_eq_orbit_iff_mem_orbit {x y : X} : orbit G x = orbit G y ↔ y ∈ orbit G x := by
-  sorry
+  constructor
+  · intro h
+    rw [h]
+    exists 1
+    simp
+  · rintro ⟨a, _⟩
+    ext
+    constructor
+    · rintro ⟨b, _⟩
+      exists b * a⁻¹
+      rw [mul_smul]
+      subst_eqs
+      simp
+    · rintro ⟨b, _⟩
+      exists b * a
+      rw [mul_smul]
+      subst_eqs
+      rfl
 
 end Appendix
 
