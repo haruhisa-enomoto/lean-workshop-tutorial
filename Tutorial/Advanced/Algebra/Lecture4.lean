@@ -116,7 +116,7 @@ instance : GroupAction G (G ⧸ H) where
     普通に`intro`すると`G ⧸ H`の元を取ることになり面倒だが、
     `rintro ⟨a⟩`とすると、`G`の元`a : G`についての主張に書き換わる。
     -/
-    rintro ⟨a⟩
+    rintro ⟨_⟩
     simp
   mul_smul' := by
     /- ヒント: 上のように`rintro`を適切に使うとよい。
@@ -124,7 +124,7 @@ instance : GroupAction G (G ⧸ H) where
     `change _ ⋆ H = _ ⋆ H`とすればゴールが変わる。
     （他にもいろんなやり方があるだろう。）
     -/
-    rintro a b ⟨c⟩
+    rintro _ _ ⟨_⟩
     simp [mul_assoc]
 
 -- `G ⧸ H`上での`G`作用の定義の確認
@@ -211,10 +211,10 @@ def leftQuotientStabilizerIsoSelfOfIsTransitive
   map_smul' := by -- 上の写像が`G`同変なこと。
     -- 「`G ⧸ H`の元について◯◯」がゴールなら、
     -- `rintro ⟨a⟩`とすれば`a : G`についての主張に書き換わる。
-    rintro a ⟨b⟩
+    rintro _ ⟨_⟩
     simp [mul_smul]
   injective := by -- 単射性
-    rintro ⟨a⟩ ⟨b⟩ h
+    rintro ⟨_⟩ ⟨_⟩ h
     simp at *
     simp [mul_smul, ← h]
   surjective := by -- 全射性
@@ -226,7 +226,7 @@ def leftQuotientStabilizerIsoSelfOfIsTransitive
     intro x
     have : ∃ a : G, a • x₀ = x := by
       apply IsTransitive.exists_smul_eq
-    obtain ⟨a, ha⟩ := this
+    obtain ⟨a, _⟩ := this
     exists a ⋆ stabilizer G x₀
 
 end GroupAction

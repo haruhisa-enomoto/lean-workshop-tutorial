@@ -48,7 +48,7 @@ instance : Group (G ⧸ N) where
   mul := Quotient.map₂' (fun a b ↦ a * b) <| by
     -- 積が剰余類上でwell-definedか？
     -- `mem_comm`や`mem_comm_iff`が役立つかも。
-    intro a b hab c d hcd
+    intro a _ hab _ _ hcd
     simp at *
     rw [mul_assoc, ← mul_assoc a⁻¹, N.mem_comm_iff, mul_assoc]
     exact N.mul_mem hab (N.mem_comm hcd)
@@ -56,7 +56,7 @@ instance : Group (G ⧸ N) where
   -- 逆元を取る操作は、`a ↦ a⁻¹ ⋆ N`をliftしよう。
   inv := LeftQuotient.lift (fun a ↦ a⁻¹ ⋆ N) <| by
     -- well-defined性
-    intro a b hab
+    intro _ _ hab
     have := N.inv_mem (N.mem_comm hab)
     simpa
   mul_assoc := by
@@ -67,10 +67,10 @@ instance : Group (G ⧸ N) where
     -- もしくは`change`のかわりに、`simp`や`dsimp`を使ってもよい
     rw [mul_assoc]
   one_mul := by
-    rintro ⟨a⟩
+    rintro ⟨_⟩
     simp
   mul_inv_left := by
-    rintro ⟨a⟩
+    rintro ⟨_⟩
     simp
 
 @[simp]
@@ -89,12 +89,12 @@ variable [Group G] {N : Subgroup G} [N.Normal] [Group H]
 いわゆる商群の普遍性。 -/
 def GroupHom.kerLift (f : G →* H) (h : ∀ a ∈ N, f a = 1) : (G ⧸ N) →* H where
   toFun := LeftQuotient.lift f <| by
-    intro a b hab
+    intro _ _ hab
     rw [← inv_mul_eq_one, ← map_inv, ← map_mul]
     exact h _ hab
   map_mul' := by
     -- `rintro ⟨a⟩`等で代表元をとると良い。
-    rintro ⟨a⟩ ⟨b⟩
+    rintro ⟨_⟩ ⟨_⟩
     simp
 
 end Section1
@@ -204,13 +204,13 @@ theorem rangeKerLift_apply {a : G} : f.rangeKerLift (a ⋆ f.ker) = f a := rfl
 /-- `f.rangeKerLift`は単射である。 -/
 theorem rangeKerLift_injective : Function.Injective f.rangeKerLift := by
   rw [injective_iff_map_eq_one]
-  rintro ⟨a⟩
+  rintro ⟨_⟩
   simp_all
 
 /-- `f.rangeKerLift`は全射である。 -/
 theorem rangeKerLift_surjective : Function.Surjective f.rangeKerLift := by
   -- `f.range.Elem`から元を取るとき、下のようにすると`y : H`が取れ、わかりやすい
-  intro ⟨y, x, hx⟩
+  intro ⟨_, x, _⟩
   exists LeftQuotient.mk x
   simpa
 
