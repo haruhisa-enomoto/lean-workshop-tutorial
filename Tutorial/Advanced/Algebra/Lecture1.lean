@@ -128,7 +128,8 @@ theorem mul_left_cancel (a : G) {x y : G} : a * x = a * y → x = y := by
   -- ヒント: `intro h`してから上のように`calc`で変形しよう
   -- （`calc`を使わず`rw`のみの縛りプレイでも可能）
   intro h
-  rw [← inv_mul_cancel_left a x, ← inv_mul_cancel_left a y, h]
+  have : a⁻¹ * (a * x) = a⁻¹ * (a * y) := by rw [h]
+  simpa
 
 /-- `1`は右単位元でもある。 -/
 @[simp]
@@ -195,11 +196,7 @@ theorem mul_inv_rev {a b : G} : (a * b)⁻¹ = b⁻¹ * a⁻¹ := by
 
 theorem mul_inv_eq_iff_eq_mul {a b c : G} : a * b⁻¹ = c ↔ a = c * b := by
   -- ヒント: `constructor`でゴールを分けよう
-  constructor
-  all_goals
-    intro h
-    subst_vars
-    simp
+  aesop
 
 theorem mul_inv_eq_one {a b : G} : a * b⁻¹ = 1 ↔ a = b := by
   suffices a * b⁻¹ = 1 ↔ a = 1 * b by simp_all
