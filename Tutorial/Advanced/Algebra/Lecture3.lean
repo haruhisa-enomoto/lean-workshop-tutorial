@@ -231,11 +231,11 @@ def orbitRel (G) [Group G] (X) [GroupAction G X] : Setoid X where
       exists 1
       simp
     symm := by -- 対称律
-      rintro _ _ ⟨a, _⟩
+      intro _ _ ⟨a, _⟩
       exists a⁻¹
       aesop
     trans := by -- 推移律
-      rintro _ _ _ ⟨a, _⟩ ⟨b, _⟩
+      intro _ _ _ ⟨a, _⟩ ⟨b, _⟩
       exists b * a
       rw [mul_smul]
       aesop
@@ -254,15 +254,15 @@ theorem orbit_eq_orbit_iff_mem_orbit {x y : X} : orbit G x = orbit G y ↔ y ∈
     rw [h]
     exists 1
     simp
-  · rintro ⟨a, _⟩
+  · intro ⟨a, _⟩
     ext
     constructor
-    · rintro ⟨b, _⟩
+    · intro ⟨b, _⟩
       exists b * a⁻¹
       rw [mul_smul]
       subst_eqs
       simp
-    · rintro ⟨b, _⟩
+    · intro ⟨b, _⟩
       exists b * a
       rw [mul_smul]
       subst_eqs

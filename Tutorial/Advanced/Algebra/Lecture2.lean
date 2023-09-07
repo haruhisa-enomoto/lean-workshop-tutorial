@@ -103,11 +103,11 @@ def range (f : G₁ →* G₂) : Subgroup G₂ where
     exists 1
     simp
   mul_mem' := by
-    rintro _ _ ⟨x, hx⟩ ⟨y, hy⟩
+    intro _ _ ⟨x, hx⟩ ⟨y, hy⟩
     exists x * y
     simp [hx, hy]
   inv_mem' := by
-    rintro _ ⟨x, hx⟩
+    intro _ ⟨x, hx⟩
     exists x⁻¹
     simp [hx]
 
