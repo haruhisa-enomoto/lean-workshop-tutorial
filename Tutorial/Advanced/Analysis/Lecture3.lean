@@ -41,7 +41,14 @@ theorem «0.9999999 = 1» : Real.ofCauchy (Quotient.mk CauSeq.equiv «0.9999999�
   intro ε ε0
   suffices ∃ i, ∀ (j : ℕ), j ≥ i → (10 ^ j : ℚ)⁻¹ < ε by simpa [abs]
   -- ヒント: `pow_unbounded_of_one_lt`と`inv_lt_of_inv_lt`を使って、欲しい`i`を手に入れよう
-  sorry
+  -- have := @pow_unbounded_of_one_lt
+  have ⟨i, h⟩ := pow_unbounded_of_one_lt ε⁻¹ (y := 10) (by linarith)
+  exists i
+  replace h := inv_lt_of_inv_lt ε0 h
+  intro j hji
+  calc
+    _ ≤ _ := inv_pow_le_inv_pow_of_le (by triv) hji
+    _ < _ := h
 
 open Filter Topology Set Classical
 
@@ -247,14 +254,34 @@ theorem HasFinSubCover_of_Icc (hU : ∀ (i : ι), IsOpen (U i)) (cover : Icc 0 1
   rcases cover (nestedIntervalLim_mem U 0) with ⟨_, ⟨i, rfl⟩, hU' : c ∈ U i⟩
   rcases Metric.isOpen_iff.mp (hU i) c hU' with ⟨ε, ε0, hε⟩
   have ⟨n, hn⟩ : ∃ n : ℕ, (ε / 2)⁻¹ < 2 ^ n := by
-    sorry
+    apply pow_unbounded_of_one_lt
+    linarith
   suffices HasFinSubCover U I(n) by 
-    sorry
+    have := nestedInterval_not_HasFinSubCover H n
+    contradiction
   suffices I(n) ⊆ U i by
-    sorry
+    exists {i}
+    simpa
   suffices ∀ x, x ∈ I(n) → |x - c| < ε by
-    sorry
-  sorry
+    intro x hx
+    apply hε
+    exact this x hx
+  intro x hx
+  have : β n - α n = _ := nestedInterval_len U n
+  have hc : c ∈ I(n) := nestedIntervalLim_mem U n
+  rw [mem_Icc] at *
+  replace hn := inv_lt_of_inv_lt (by linarith) hn
+  calc 
+    _ = |(x - α n) - (c - α n)| := by simp
+    _ ≤ |x - α n| + |c - α n| := by apply abs_sub
+    _ = (x - α n) + (c - α n) := by
+      apply congrArg₂
+      all_goals
+        apply abs_eq_self.mpr
+        linarith
+    -- _ ≤ (β n - α n) + (β n - α n) := by linarith
+    _ < ε / 2 + ε / 2 := by linarith
+    _ = ε := by simp
 
 -- 空でない上に有界な実数集合が上限を持つことを用いた別証明
 /-- 閉区間`Icc 0 1`はコンパクト -/
@@ -263,13 +290,15 @@ example (hU : ∀ (i : ι), IsOpen (U i)) (cover : Icc 0 1 ⊆ ⋃ (i : ι), U i
   set A := { x : ℝ | x ∈ Icc 0 1 ∧ HasFinSubCover U (Icc 0 x) }
   have A0 : 0 ∈ A := by
     rcases cover (left_mem_Icc.mpr zero_le_one) with ⟨_, ⟨i, rfl⟩, hU' : 0 ∈ U i⟩
-    sorry
+    exact ⟨by simp, {i}, by simpa⟩
   have A1 : A.Nonempty := ⟨0, A0⟩
   have A2 : 1 ∈ upperBounds A := fun x hx ↦ hx.1.2
   -- `c`は`A`の最小上界
   have ⟨c, ⟨hAc, hAc'⟩⟩ : ∃ c, IsLUB A c := ⟨sSup A, isLUB_csSup A1 ⟨1, A2⟩⟩
   have hc : c ∈ Icc 0 1 := by
-    sorry
+    constructor
+    · exact hAc A0
+    · exact hAc' A2 
   rcases cover hc with ⟨_, ⟨i, rfl⟩, hUc' : c ∈ U i⟩
   have hcA : c ∈ A := by
     rcases hc.1.eq_or_lt with rfl | hlt
@@ -280,7 +309,11 @@ example (hU : ∀ (i : ι), IsOpen (U i)) (cover : Icc 0 1 ⊆ ⋃ (i : ι), U i
       rcases ((IsLUB.frequently_mem ⟨hAc, hAc'⟩ A1).and_eventually 
         (Ioc_mem_nhdsWithin_Iic ⟨hxc, le_rfl⟩)).exists with ⟨y, ⟨-, hyf⟩, hy⟩
       apply hasFinSubCover_concat hyf
-      sorry
+      exists {i}
+      intro a ⟨ha₁, ha₂⟩
+      simp
+      apply hxU
+      constructor <;> linarith
   suffices c = 1 from this.symm ▸ hcA.2
   by_contra hnc
   have hlt : c < 1 := Ne.lt_of_le hnc (A2 hcA)
@@ -288,14 +321,27 @@ example (hU : ∀ (i : ι), IsOpen (U i)) (cover : Icc 0 1 ⊆ ⋃ (i : ι), U i
     (mem_nhdsWithin_of_mem_nhds <| (hU i).mem_nhds hUc') with ⟨c', ⟨hc'1, hc'2⟩, hc'U⟩
   have : c' ∈ A := by
     constructor
-    · sorry
+    · refine ⟨?_, hc'2⟩
+      rw [mem_Icc] at hc
+      linarith
     · apply hasFinSubCover_concat hcA.2
       dsimp [Icc] at hc
       have : c' ∈ Icc 0 1 := ⟨by linarith, by linarith⟩
       rcases cover this with ⟨_, ⟨i', rfl⟩, hUc' : c' ∈ U i'⟩
       -- ヒント: `Ico_union_right`と`union_subset_union`を用いるとよいかもしれない
-      sorry
-  sorry
+      exists {i, i'}
+      simp
+      rw [← Ico_union_right hc'1.le]
+      rintro a (ha | ha)
+      · left
+        exact hc'U ha
+      · right
+        rw [ha]
+        assumption
+  have :=
+    calc c' ≤ c := hAc this
+      _ < c' := hc'1
+  exact this.false
 
 end
 
