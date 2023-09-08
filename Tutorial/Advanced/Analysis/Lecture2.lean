@@ -47,7 +47,7 @@ theorem IsLocalMax.hasDerivAt_eq_zero (h : IsLocalMax f a) (hf : HasDerivAt f f'
   -- `f' ≤ 0`と`0 ≤ f'`を示す。
   apply le_antisymm ?right ?left
   case right =>
-    -- `x`を`a`に右側から近づけたとき`(f x - f a) / (x - a)`は`f`に収束する。
+    -- `x`を`a`に右側から近づけたとき`(f x - f a) / (x - a)`は`f'`に収束する。
     have hf : Tendsto (fun x ↦ (f x - f a) / (x - a)) (𝓝[>] a) (𝓝 f') := by
       rw [hasDerivAt_iff_tendsto_slope] at hf
       apply hf.mono_left (nhds_right'_le_nhds_ne a)
@@ -66,19 +66,34 @@ theorem IsLocalMax.hasDerivAt_eq_zero (h : IsLocalMax f a) (hf : HasDerivAt f f'
     · linarith only [ha]
   case left =>
     -- 右側の場合を真似て証明してみよう。最後は`div_nonneg_of_nonpos`を使うとよい。
-    sorry
+    have hf : Tendsto (fun x ↦ (f x - f a) / (x - a)) (𝓝[<] a) (𝓝 f') := by
+      rw [hasDerivAt_iff_tendsto_slope] at hf
+      apply hf.mono_left (nhds_left'_le_nhds_ne a)
+    suffices ∀ᶠ x in 𝓝[<] a, (f x - f a) / (x - a) ≥ 0 from ge_of_tendsto hf this
+    have ha : ∀ᶠ x in 𝓝[<] a, x < a := eventually_nhdsWithin_of_forall fun x hx ↦ hx
+    have h : ∀ᶠ x in 𝓝[<] a, f x ≤ f a := h.filter_mono nhdsWithin_le_nhds
+    filter_upwards [ha, h]
+    intro x ha h
+    apply div_nonneg_of_nonpos <;> linarith
 
 /-- 極小値を取る点での微分係数はゼロ -/
 theorem IsLocalMin.hasDerivAt_eq_zero (h : IsLocalMin f a) (hf : HasDerivAt f f' a) : f' = 0 := by
   -- ヒント: `IsLocalMax.hasDerivAt_eq_zero`を`x ↦ - f x`に対して使おう。
-  sorry
+  let g x := - f x
+  have hNegMax : IsLocalMax g a := h.neg -- by apply?で見つかる
+  have hNegDif : HasDerivAt g (- f') a := hf.neg
+  have := IsLocalMax.hasDerivAt_eq_zero hNegMax hNegDif
+  simpa
 
 -- 次の問題で使うかも？
 #check IsLocalExtr.elim
 
 /-- 極値を取る点での微分係数はゼロ -/
 theorem IsLocalExtr.hasDerivAt_eq_zero (h : IsLocalExtr f a) (hf : HasDerivAt f f' a) : f' = 0 := by
-  sorry
+  apply h.elim
+  · intro h
+    exact IsLocalMin.hasDerivAt_eq_zero h hf
+  · exact fun h ↦ IsLocalMax.hasDerivAt_eq_zero h hf
 
 /-
 次の定理はRolleの定理の証明に用いる。
@@ -98,9 +113,11 @@ theorem exists_local_extr_Ioo (hab : a < b) (hfc : ContinuousOn f (Icc a b)) (hf
     apply hc.isLocalExtr <| Icc_mem_nhds cmem.1 cmem.2
   have ne : (Icc a b).Nonempty := nonempty_Icc.2 (le_of_lt hab)
   have ⟨C, Cmem, Cge⟩ : ∃ C ∈ Icc a b, IsMaxOn f (Icc a b) C := by
-    sorry
+    apply IsCompact.exists_isMaxOn
+    · exact isCompact_Icc
+    all_goals assumption
   have ⟨c, cmem, cle⟩ : ∃ c ∈ Icc a b, IsMinOn f (Icc a b) c := by
-    sorry
+    exact IsCompact.exists_isMinOn (isCompact_Icc) ne hfc
   change ∀ x ∈ Icc a b, f x ≤ f C at Cge
   change ∀ x ∈ Icc a b, f c ≤ f x at cle
   by_cases hc : f c = f a
@@ -119,7 +136,10 @@ variable {f f' : ℝ → ℝ} {g g' : ℝ → ℝ} {a b : ℝ}
 /-- Rolleの定理 -/
 theorem exists_hasDerivAt_eq_zero (hab : a < b) (hfc : ContinuousOn f (Icc a b)) (hfI : f a = f b)
     (hff' : ∀ x ∈ Ioo a b, HasDerivAt f (f' x) x) : ∃ c ∈ Ioo a b, f' c = 0 := by
-  sorry
+  have ⟨c, cmem, cextr⟩ := exists_local_extr_Ioo hab hfc hfI
+  exists c, cmem
+  apply IsLocalExtr.hasDerivAt_eq_zero cextr
+  simp_all
   
 /-- Cauchyの平均値の定理 -/
 theorem exists_ratio_hasDerivAt_eq_ratio_slope (hab : a < b) 
@@ -129,7 +149,17 @@ theorem exists_ratio_hasDerivAt_eq_ratio_slope (hab : a < b)
   let h x := (g b - g a) * f x - (f b - f a) * g x
   have hhc : ContinuousOn h (Icc a b) :=
     (continuousOn_const.mul hfc).sub (continuousOn_const.mul hgc)
-  sorry
+  have : h a = h b := by ring
+  let h' x := (g b - g a) * f' x - (f b - f a) * g' x
+  have hhh' : ∀ x ∈ Ioo a b, HasDerivAt h (h' x) x := by
+    intro x mem
+    have foo := (hff' x mem).const_mul (g b - g a)
+    have bar := (hgg' x mem).const_mul (f b - f a)
+    exact foo.sub bar
+  have ⟨c, cmem, hzero⟩ := exists_hasDerivAt_eq_zero hab hhc this hhh'
+  exists c, cmem
+  dsimp only at hzero
+  linarith only [hzero]
 
 -- 次の問題で使うかも？
 #check eq_div_iff
@@ -138,6 +168,12 @@ theorem exists_ratio_hasDerivAt_eq_ratio_slope (hab : a < b)
 theorem exists_hasDerivAt_eq_slope (hab : a < b) 
     (hfc : ContinuousOn f (Icc a b)) (hff' : ∀ x ∈ Ioo a b, HasDerivAt f (f' x) x) : 
       ∃ c ∈ Ioo a b, f' c = (f b - f a) / (b - a) := by
-  sorry
+  have : ∀ (x : ℝ), x ∈ Ioo a b → HasDerivAt id 1 x := by
+    intros
+    apply hasDerivAt_id
+  have ⟨c, cmem, foo⟩ := exists_ratio_hasDerivAt_eq_ratio_slope hab hfc hff' continuousOn_id this
+  simp only [id_eq, mul_one] at foo 
+  exists c, cmem
+  rw [eq_div_iff] <;> linarith
 
 end Tutorial
