@@ -194,9 +194,10 @@ example (F : Functor Coproduct.Shape Type) : Colimit (sumCocone F) where
       -- `Cocone.toVertex`を使う
       | .inl x => t.toVertex .l x
       | .inr x => t.toVertex .r x
-    comm := by?
+    comm := by
       rintro (_ | _)
-      all_goals rfl }
+      · rfl
+      · rfl }
   uniq := by 
     intro t f 
     apply CoconeHom.ext
@@ -252,7 +253,6 @@ example (F : Functor Coproduct.Shape (CommAlgCat R)) : Colimit (tensorCocone F) 
     have hᵣ : ∀ b : F.obj .r, f.hom (1 ⊗ₜ[R.base] b) = t.toVertex .r b := by
       exact AlgHom.congr_fun (f.comm .r)
     -- ヒント: `Algebra.TensorProduct.ext'`を使う（`ext`ではなくて`ext'`）
-    -- simp
     apply Algebra.TensorProduct.ext'
     intro a b
     have : a ⊗ₜ[R] b = (a ⊗ₜ[R] 1) * (1 ⊗ₜ[R] b) := by simp
@@ -367,8 +367,7 @@ example (F : Functor Coequalizer.Shape Type) : Colimit (quotCocone F) where
           rw [← t.naturality .fst]
           rfl
         have h₂ : t.toVertex .tar (F.map .snd x) = t.toVertex .src x := by
-          rw [← t.naturality .snd]
-          rfl
+          exact congrFun (t.naturality _) _
         rw [h₁, h₂]
       comm := by
         intro j
@@ -382,8 +381,6 @@ example (F : Functor Coequalizer.Shape Type) : Colimit (quotCocone F) where
     funext x 
     -- `Quot.ind`を使う。`apply Quot.ind _ x`のように使うとよい。
     apply Quot.ind _ x
-    dsimp only
-    rw [← f.comm]
-    simp
+    simp [← f.comm]
 
 end Tutorial
